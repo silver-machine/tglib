@@ -8,8 +8,10 @@ game.clearscr()
 def update():
     global x, y
     game.clear_layer(1)
+
     game.text(x, y, "Hello, World!", layer=1, color=32)
     game.text(x, y+1, "Use arrow keys to move", layer=1, color=34)
+    
     match game.handle_input():
         case 'q':
             game.stop()
