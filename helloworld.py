@@ -1,6 +1,6 @@
 from main import *
 
-game = Scene()
+game = Scene(title="Hello World Example")
 x, y = game.width // 2 - 7, game.height // 2
 
 game.clearscr()
@@ -18,10 +18,10 @@ def update():
         case 'LEFT':
             x = max(0, x - 1)
         case 'RIGHT':
-            x = min(game.width - 1, x + 1)
+            x = min(game.width - 2, x + 1)
         case 'UP':
             y = max(0, y - 1)
         case 'DOWN':
-            y = min(game.height - 1, y + 1)
+            y = min(game.height - 2, y + 1)
 
 game.run(update)

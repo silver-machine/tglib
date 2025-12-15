@@ -4,7 +4,7 @@ import cursor
 import msvcrt
 
 class Scene:
-    def __init__(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1], hide_cur=True):
+    def __init__(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1], hide_cur=True, title="TGLib"):
         self.width = width
         self.height = height
 
@@ -26,6 +26,8 @@ class Scene:
 
         if hide_cur:
             cursor.hide()
+
+        os.system("title " + title)
 
     def set_char(self, x, y, char, layer=2, color=37):
         if 0 <= x < self.width and 0 <= y < self.height:
