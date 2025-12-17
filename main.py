@@ -3,8 +3,13 @@ import time
 import cursor
 import msvcrt
 
+ARROW_LEFT = b'K'
+ARROW_RIGHT = b'M'
+ARROW_UP = b'H'
+ARROW_DOWN = b'P'
+
 class Scene:
-    def __init__(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1], hide_cur=True, title="TGLib"):
+    def __init__(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1], hide_cur=True, title="TGLib", bindings={}):
         self.width = width
         self.height = height
 
@@ -28,6 +33,7 @@ class Scene:
             cursor.hide()
 
         os.system("title " + title)
+        self.bindings = bindings
 
     def set_char(self, x, y, char, layer=2, color=37):
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -151,18 +157,27 @@ class Scene:
     def handle_input(self):
         if msvcrt.kbhit():
             key = msvcrt.getch()
-            if key == b'\xe0':
-                key2 = msvcrt.getch()
-                if key2 == b'H':
-                    return 'UP'
-                elif key2 == b'P':
-                    return 'DOWN'
-                elif key2 == b'K':
-                    return 'LEFT'
-                elif key2 == b'M':  
-                    return 'RIGHT'
+            if key not in self.bindings:
+                if key == b'\xe0':
+                    key2 = msvcrt.getch()
+                    if key2 in [b'K', b'M', b'H', b'P']:
+                        self.bindings[key2]()
+                    else:
+                        if key2 == b'H':
+                            return 'UP'
+                        elif key2 == b'P':
+                            return 'DOWN'
+                        elif key2 == b'K':
+                            return 'LEFT'
+                        elif key2 == b'M':  
+                            return 'RIGHT'
+                else:
+                    return key.decode('utf-8')
             else:
-                return key.decode('utf-8')
+                self.bindings[key]()
+    
+    def bind_key(self, key, function):
+        self.bindings[key] = function
 
     def run(self, update_function, fps=20):
         try:
