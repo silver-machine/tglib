@@ -8,18 +8,52 @@ ARROW_RIGHT = b'M'
 ARROW_UP = b'H'
 ARROW_DOWN = b'P'
 
+class Sprite:
+    def __init__(self, x, y, char='#', color=37, layer=1):
+        self.x = x
+        self.y = y
+
+        self.char = char
+        self.color = color
+        self.layer = layer
+    
+    def dissolve(self):
+        self.char = ' '
+
+class Actor(Sprite):
+    def __init__(self, x, y,
+                 char='@', color=37, layer=2,
+                 behaviour=None):
+        super().__init__(x, y, char, color, layer)
+        self.behaviour = behaviour
+    
+    def act(self):
+        if self.behaviour:
+            self.behaviour(self)
+
+class Object(Sprite):
+    def __init__(self, x, y,
+                 char='#', color=37, layer=1,
+                 moveable=False, pickable=False, collidable=True):
+        super().__init__(x, y, char, color, layer)
+        self.moveable = moveable
+        self.pickable = pickable
+        self.collidable = collidable
+
 class Scene:
-    def __init__(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1], hide_cur=True, title="TGLib", bindings={}):
+    def __init__(self, width=os.get_terminal_size()[0],
+                 height=os.get_terminal_size()[1],
+                 hide_cur=True, title="TGLib", bindings={}):
         self.width = width
         self.height = height
 
-        # layers:
         #   0 = background, 1 = objects, 2 = actors
         self.layers = [
             [[' ']*width for _ in range(height)],
             [[' ']*width for _ in range(height)],
             [[' ']*width for _ in range(height)]
         ]
+
         self.colors = [
             [[37]*width for _ in range(height)],
             [[37]*width for _ in range(height)],
@@ -99,7 +133,7 @@ class Scene:
                 surroundings[direction] = (None, None)
         return surroundings
     
-    def surrounded_by(self, x, y, target_char):
+    def surrounded_by_x(self, x, y, target_char):
         surroundings = self.get_surrounding_chars(x, y)
         for char in surroundings.values():
             if char != target_char:
@@ -121,6 +155,11 @@ class Scene:
                 char, color = self.get_char_and_color(x, y)
                 self.prev_buffer[y][x] = char
                 self.prev_colors[y][x] = color
+    
+    def run_actors(self, actors):
+        for actor in actors:
+            actor.act(self)
+            self.set_char(actor.x, actor.y, actor.char, layer=actor.layer, color=actor.color)
     
     def update_size(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1],):
         if width != self.width or height != self.height:
@@ -147,6 +186,15 @@ class Scene:
     def clear_layer(self, layer):
         self.layers[layer] = [[' ']*self.width for _ in range(self.height)]
         self.colors[layer] = [[37]*self.width for _ in range(self.height)]
+    
+    def clear_all_layers(self):
+        for layer in range(len(self.layers)):
+            self.clear_layer(layer)
+    
+    def clear_char(self, x, y, layer=2):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            self.layers[layer][y][x] = ' '
+            self.colors[layer][y][x] = 37
 
     def showcursor(self):
         cursor.show()
