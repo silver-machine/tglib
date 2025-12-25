@@ -50,7 +50,7 @@ class Scene:
         self.width = width
         self.height = height
 
-        #   0 = background, 1 = objects, 2 = actors
+        # 0 = background, 1 = objects, 2 = actors
         self.layers = [
             [[' ']*width for _ in range(height)],
             [[' ']*width for _ in range(height)],
