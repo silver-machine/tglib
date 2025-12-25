@@ -1,6 +1,6 @@
 from main import *
 
-game = Scene(title="Hello World Example")
+game = Scene(title="Hello World Example", fps=1)
 x, y = game.width // 2 - 7, game.height // 2
 
 game.clearscr()
@@ -11,8 +11,10 @@ def update():
 
     game.text(x, y, "Hello, World!", layer=1, color=32)
     game.text(x, y+1, "Use arrow keys to move", layer=1, color=34)
+
+    key = game.handle_input()
     
-    match game.handle_input():
+    match key:
         case 'q':
             game.stop()
         case 'LEFT':

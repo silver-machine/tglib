@@ -8,6 +8,9 @@ ARROW_RIGHT = b'M'
 ARROW_UP = b'H'
 ARROW_DOWN = b'P'
 
+def color_text(text, color_code):
+    return f"\033[{color_code}m{text}\033[0m"
+
 class Sprite:
     def __init__(self, x, y, char='#', color=37, layer=1):
         self.x = x
@@ -43,7 +46,7 @@ class Object(Sprite):
 class Scene:
     def __init__(self, width=os.get_terminal_size()[0],
                  height=os.get_terminal_size()[1],
-                 hide_cur=True, title="TGLib", bindings={}):
+                 hide_cur=True, title="TGLib", bindings={}, fps=20):
         self.width = width
         self.height = height
 
@@ -68,6 +71,7 @@ class Scene:
 
         os.system("title " + title)
         self.bindings = bindings
+        self.fps = fps
 
     def set_char(self, x, y, char, layer=2, color=37):
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -77,6 +81,49 @@ class Scene:
     def text(self, x, y, string, layer=2, color=37):
         for i, char in enumerate(string):
             self.set_char(x + i, y, char, layer, color)
+
+    def menu(self, x, y, title, options, layer=2, normal_color=37, highlight_color=30, highlight_bg=47, cursor=">"):
+
+        selected = 0
+        option_count = len(options)
+
+        def draw():
+            self.clear_area(x, y, max(len(title), max(len(opt) for opt in options)) + 2, option_count + 1, layer)
+
+            self.text(x, y, title, layer, normal_color)
+
+            for i, option in enumerate(options):
+                if i == selected:
+                    color = f"{highlight_bg};{highlight_color}"
+                    self.text(x, y + i + 1, f"{cursor} {option}", layer, color)
+                else:
+                    self.text(x, y + i + 1, f"{' ' * len(cursor)} {option}", layer, normal_color)
+
+            self.display()
+
+        while True:
+            draw()
+            time.sleep(1 / self.fps)
+
+            key = self.handle_input()
+            if not key:
+                continue
+
+            if key == 'UP':
+                selected = (selected - 1) % option_count
+            elif key == 'DOWN':
+                selected = (selected + 1) % option_count
+
+            elif key in ('w', 'W'):
+                selected = (selected - 1) % option_count
+            elif key in ('s', 'S'):
+                selected = (selected + 1) % option_count
+
+            elif key == '\r':
+                return selected, options[selected]
+
+            elif key == '\x1b':
+                return None, None
     
     def get_char(self, x, y):
         for layer in reversed(range(len(self.layers))):
@@ -149,7 +196,6 @@ class Scene:
                     output.append(f"\033[{color}m\033[{y+1};{x+1}H{char}\033[0m")
         print(''.join(output), end='', flush=True)
 
-        # update buffers
         for y in range(self.height):
             for x in range(self.width):
                 char, color = self.get_char_and_color(x, y)
@@ -195,6 +241,11 @@ class Scene:
         if 0 <= x < self.width and 0 <= y < self.height:
             self.layers[layer][y][x] = ' '
             self.colors[layer][y][x] = 37
+    
+    def clear_area(self, x, y, w, h, layer=2):
+        for i in range(h):
+            for j in range(w):
+                self.clear_char(x + j, y + i, layer)
 
     def showcursor(self):
         cursor.show()
@@ -208,17 +259,20 @@ class Scene:
             if key not in self.bindings:
                 if key == b'\xe0':
                     key2 = msvcrt.getch()
-                    if key2 in [b'K', b'M', b'H', b'P']:
+
+                    if key2 in self.bindings:
                         self.bindings[key2]()
-                    else:
-                        if key2 == b'H':
-                            return 'UP'
-                        elif key2 == b'P':
-                            return 'DOWN'
-                        elif key2 == b'K':
-                            return 'LEFT'
-                        elif key2 == b'M':  
-                            return 'RIGHT'
+                        return None
+
+                    if key2 == b'H':
+                        return 'UP'
+                    elif key2 == b'P':
+                        return 'DOWN'
+                    elif key2 == b'K':
+                        return 'LEFT'
+                    elif key2 == b'M':
+                        return 'RIGHT'
+
                 else:
                     return key.decode('utf-8')
             else:
@@ -227,12 +281,12 @@ class Scene:
     def bind_key(self, key, function):
         self.bindings[key] = function
 
-    def run(self, update_function, fps=20):
+    def run(self, update_function):
         try:
             while True:
                 update_function()
                 self.display()
-                time.sleep(1/fps)
+                time.sleep(1/self.fps)
         except KeyboardInterrupt:
             self.showcursor()
             self.clearscr()
