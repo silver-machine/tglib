@@ -50,21 +50,21 @@ class Scene:
         self.width = width
         self.height = height
 
-        # 0 = background, 1 = objects, 2 = actors
+        # 0 = background & text, 1 = objects, 2 = actors
         self.layers = [
-            [[' ']*width for _ in range(height)],
-            [[' ']*width for _ in range(height)],
-            [[' ']*width for _ in range(height)]
+            [[' '] * width for _ in range(height)],
+            [[' '] * width for _ in range(height)],
+            [[' '] * width for _ in range(height)]
         ]
 
         self.colors = [
-            [[37]*width for _ in range(height)],
-            [[37]*width for _ in range(height)],
-            [[37]*width for _ in range(height)]
+            [[37] * width for _ in range(height)],
+            [[37] * width for _ in range(height)],
+            [[37] * width for _ in range(height)]
         ]
 
-        self.prev_buffer = [[' ']*width for _ in range(height)]
-        self.prev_colors = [[37]*width for _ in range(height)]
+        self.prev_buffer = [[' '] * width for _ in range(height)]
+        self.prev_colors = [[37] * width for _ in range(height)]
 
         if hide_cur:
             cursor.hide()
@@ -78,11 +78,11 @@ class Scene:
             self.layers[layer][y][x] = char
             self.colors[layer][y][x] = color
     
-    def text(self, x, y, string, layer=2, color=37):
+    def text(self, x=0, y=0, string="No text set", layer=0, color=37):    
         for i, char in enumerate(string):
             self.set_char(x + i, y, char, layer, color)
 
-    def menu(self, x, y, title, options, layer=2, normal_color=37, highlight_color=30, highlight_bg=47, cursor=">"):
+    def menu(self, x=0, y=0, title="Menu", options=[], layer=0, normal_color=37, highlight_color=91, highlight_bg=90, cursor=">"):
 
         selected = 0
         option_count = len(options)
@@ -109,19 +109,14 @@ class Scene:
             if not key:
                 continue
 
-            if key == 'UP':
+            if key in ('UP', 'LEFT', 'w', 'W'):
                 selected = (selected - 1) % option_count
-            elif key == 'DOWN':
-                selected = (selected + 1) % option_count
-
-            elif key in ('w', 'W'):
-                selected = (selected - 1) % option_count
-            elif key in ('s', 'S'):
+            elif key in ('DOWN', 'RIGHT', 's', 'S'):
                 selected = (selected + 1) % option_count
 
             elif key == '\r':
                 return selected, options[selected]
-
+            
             elif key == '\x1b':
                 return None, None
     
@@ -152,6 +147,7 @@ class Scene:
             'down_left': (-1, 1),
             'down_right': (1, 1)
         }
+
         for direction, (dx, dy) in directions.items():
             nx, ny = x + dx, y + dy
             if 0 <= nx < self.width and 0 <= ny < self.height:
@@ -226,13 +222,13 @@ class Scene:
         else:
             return
 
-    def clearscr(self):
+    def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
     
     def clear_layer(self, layer):
         self.layers[layer] = [[' ']*self.width for _ in range(self.height)]
         self.colors[layer] = [[37]*self.width for _ in range(self.height)]
-    
+
     def clear_all_layers(self):
         for layer in range(len(self.layers)):
             self.clear_layer(layer)
@@ -278,6 +274,12 @@ class Scene:
             else:
                 self.bindings[key]()
     
+    def wait_for_key(self, valid_keys=None):
+        while True:
+            key = self.handle_input()
+            if key and (valid_keys is None or key in valid_keys):
+                return key
+    
     def bind_key(self, key, function):
         self.bindings[key] = function
 
@@ -288,11 +290,9 @@ class Scene:
                 self.display()
                 time.sleep(1/self.fps)
         except KeyboardInterrupt:
-            self.showcursor()
-            self.clearscr()
+            self.stop()
     
     def stop(self, msg=""):
         self.showcursor()
-        self.clearscr()
         print(msg) if msg else None
         quit()
