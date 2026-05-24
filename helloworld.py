@@ -3,7 +3,7 @@ from main import *
 game = Scene(title="Hello World Example", fps=10)
 x, y = game.width // 2 - 7, game.height // 2
 
-game.clearscr()
+game.clear_screen()
 
 def update():
     global x, y
