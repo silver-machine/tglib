@@ -8,8 +8,14 @@ ARROW_RIGHT = b'M'
 ARROW_UP = b'H'
 ARROW_DOWN = b'P'
 
-def color_text(text, color_code):
-    return f"\033[{color_code}m{text}\033[0m"
+RESET = "[0]"
+RED = "[91]"
+GREEN = "[92]"
+YELLOW = "[93]"
+BLUE = "[94]"
+MAGENTA = "[95]"
+CYAN = "[96]"
+WHITE = "[97]"
 
 class Sprite:
     def __init__(self, x, y, char='#', color=37, layer=1):
@@ -81,9 +87,42 @@ class Scene:
     def text(self, x=0, y=0, string="No text set", layer=0, color=37):    
         for i, char in enumerate(string):
             self.set_char(x + i, y, char, layer, color)
+    
+    def multi_line_text(self, x=0, y=0, text="No text set", layer=0, color=37):
+        lines = text.split("\n") if not isinstance(text, list) else text
+        new_y = y
+        for line in lines:
+            self.text(x, new_y, line, layer, color)
+            new_y += 1
+    
+    def rich_text(self, x, y, string, layer=0, default_color=37):
+        color = default_color
+        i = 0
+        draw_x = x
+
+        while i < len(string):
+            if string[i] == '[':
+                end = string.find(']', i)
+                if end != -1:
+                    tag = string[i+1:end]
+
+                    if tag.isdigit() or ';' in tag:
+                        color = tag
+                        i = end + 1
+                        continue
+
+            self.set_char(draw_x, y, string[i], layer, color)
+            draw_x += 1
+            i += 1
+    
+    def rich_multi_line_text(self, x=0, y=0, text="No text set", layer=0, color=37):
+        lines = text.split("\n") if not isinstance(text, list) else text
+        new_y = y
+        for line in lines:
+            self.rich_text(x, new_y, line, layer, color)
+            new_y += 1
 
     def menu(self, x=0, y=0, title="Menu", options=[], layer=0, normal_color=37, highlight_color=91, highlight_bg=90, cursor=">"):
-
         selected = 0
         option_count = len(options)
 
@@ -200,7 +239,7 @@ class Scene:
     
     def run_actors(self, actors):
         for actor in actors:
-            actor.act(self)
+            actor.act()
             self.set_char(actor.x, actor.y, actor.char, layer=actor.layer, color=actor.color)
     
     def update_size(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1],):
@@ -290,9 +329,11 @@ class Scene:
                 self.display()
                 time.sleep(1/self.fps)
         except KeyboardInterrupt:
-            self.stop()
+            self.showcursor()
+            self.clear_screen()
     
     def stop(self, msg=""):
         self.showcursor()
+        self.clear_screen()
         print(msg) if msg else None
         quit()
