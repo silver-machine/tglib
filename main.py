@@ -269,8 +269,9 @@ class Scene:
         self.colors[layer] = [[37]*self.width for _ in range(self.height)]
 
     def clear_all_layers(self):
-        for layer in range(len(self.layers)):
-            self.clear_layer(layer)
+        self.clear_layer(0)
+        self.clear_layer(1)
+        self.clear_layer(2)
     
     def clear_char(self, x, y, layer=2):
         if 0 <= x < self.width and 0 <= y < self.height:
