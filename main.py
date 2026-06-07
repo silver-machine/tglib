@@ -18,22 +18,31 @@ CYAN = "[96]"
 WHITE = "[97]"
 
 class Sprite:
-    def __init__(self, x, y, char='#', color=37, layer=1):
+    def __init__(self, x, y, char='#', color=37, layer=1, id=None):
         self.x = x
         self.y = y
 
         self.char = char
         self.color = color
         self.layer = layer
+
+        self.id = id
     
     def dissolve(self):
         self.char = ' '
 
+class Tile(Sprite):
+    def __init__(self, x, y,
+                 char='.', color=37, layer=0,
+                 collidable=False, id=None):
+        super().__init__(x, y, char, color, layer, id)
+        self.collidable = collidable
+
 class Actor(Sprite):
     def __init__(self, x, y,
                  char='@', color=37, layer=2,
-                 behaviour=None):
-        super().__init__(x, y, char, color, layer)
+                 behaviour=None, id=None):
+        super().__init__(x, y, char, color, layer, id)
         self.behaviour = behaviour
     
     def act(self):
@@ -43,8 +52,8 @@ class Actor(Sprite):
 class Object(Sprite):
     def __init__(self, x, y,
                  char='#', color=37, layer=1,
-                 moveable=False, pickable=False, collidable=True):
-        super().__init__(x, y, char, color, layer)
+                 moveable=False, pickable=False, collidable=True, id=None):
+        super().__init__(x, y, char, color, layer, id)
         self.moveable = moveable
         self.pickable = pickable
         self.collidable = collidable
