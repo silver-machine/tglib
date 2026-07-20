@@ -35,6 +35,9 @@ class Sprite:
     
     def dissolve(self):
         self.char = ' '
+    
+    def draw(self, scene):
+        scene.set_char(self.x, self.y, self.char, layer=self.layer, color=self.color)
 
 class Tile(Sprite):
     def __init__(self, x, y,
@@ -42,6 +45,9 @@ class Tile(Sprite):
                  collidable=False, id=None):
         super().__init__(x, y, char, color, layer, id)
         self.collidable = collidable
+    
+    def draw(self, scene):
+        scene.set_char(self.x, self.y, self.char, layer=self.layer, color=self.color)
 
 class Actor(Sprite):
     def __init__(self, x, y,
@@ -53,6 +59,29 @@ class Actor(Sprite):
     def act(self):
         if self.behaviour:
             self.behaviour(self)
+    
+    def collided_with(self, other):
+        if self.x == other.x and self.y == other.y:
+            return True
+        return False
+    
+    def move(self, dx, dy):
+        self.x += dx
+        self.y += dy
+    
+    def move_towards(self, target_x, target_y):
+        if self.x < target_x:
+            self.x += 1
+        elif self.x > target_x:
+            self.x -= 1
+        
+        if self.y < target_y:
+            self.y += 1
+        elif self.y > target_y:
+            self.y -= 1
+    
+    def draw(self, scene):
+        scene.set_char(self.x, self.y, self.char, layer=self.layer, color=self.color)
 
 class Object(Sprite):
     def __init__(self, x, y,
@@ -62,6 +91,24 @@ class Object(Sprite):
         self.moveable = moveable
         self.pickable = pickable
         self.collidable = collidable
+    
+    def move(self, dx, dy):
+        self.x += dx
+        self.y += dy
+    
+    def move_towards(self, target_x, target_y):
+        if self.x < target_x:
+            self.x += 1
+        elif self.x > target_x:
+            self.x -= 1
+        
+        if self.y < target_y:
+            self.y += 1
+        elif self.y > target_y:
+            self.y -= 1
+    
+    def draw(self, scene):
+        scene.set_char(self.x, self.y, self.char, layer=self.layer, color=self.color)
 
 class Scene:
     def __init__(self, width=os.get_terminal_size()[0],
@@ -331,8 +378,11 @@ class Scene:
     def wait_for_key(self, valid_keys=None):
         while True:
             key = self.handle_input()
-            if key and (valid_keys is None or key in valid_keys):
-                return key
+            if key is not None:
+                if valid_keys is None or key in valid_keys:
+                    return key
+                else:
+                    continue
     
     def bind_key(self, key, function):
         self.bindings[key] = function
