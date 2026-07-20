@@ -17,6 +17,11 @@ MAGENTA = "[95]"
 CYAN = "[96]"
 WHITE = "[97]"
 
+def find_center(x1, y1, x2, y2):
+    center_x = (x1 + x2) // 2
+    center_y = (y1 + y2) // 2
+    return center_x, center_y
+
 class Sprite:
     def __init__(self, x, y, char='#', color=37, layer=1, id=None):
         self.x = x
