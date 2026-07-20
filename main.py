@@ -375,6 +375,31 @@ class Scene:
             else:
                 self.bindings[key]()
     
+    def prompt(self, x=0, y=0, prompt="Prompt", cursor="> ", show=True, layer=0, color=37):
+        if show: self.showcursor()
+        self.rich_text(x, y, prompt, layer, color)
+        self.rich_text(x, y + 1, cursor, layer, color)
+        self.display()
+
+        input_str = ""
+        while True:
+            key = self.handle_input()
+            if key is None:
+                continue
+            elif key == '\r':
+                break
+            elif key == '\x08':  # Backspace
+                input_str = input_str[:-1]
+                self.rich_text(x + len(cursor) + len(input_str), y + 1, ' ', layer)
+            else:
+                input_str += key
+                self.rich_text(x + len(cursor) + len(input_str) - 1, y + 1, key, layer)
+
+            self.display()
+
+        self.hidecursor()
+        return input_str
+
     def wait_for_key(self, valid_keys=None):
         while True:
             key = self.handle_input()
