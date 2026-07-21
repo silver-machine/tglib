@@ -65,20 +65,25 @@ class Actor(Sprite):
             return True
         return False
     
-    def move(self, dx, dy):
+    def move(self, dx, dy, check_collision=False, collidables=[]):
+        if check_collision:
+            for obj in collidables:
+                if obj != self and self.x + dx == obj.x and self.y + dy == obj.y:
+                    return False
         self.x += dx
         self.y += dy
+        return True
     
-    def move_towards(self, target_x, target_y):
+    def move_towards(self, target_x, target_y, check_collision=False, collidables=[]):
         if self.x < target_x:
-            self.x += 1
+            self.move(1, 0, check_collision=check_collision, collidables=collidables)
         elif self.x > target_x:
-            self.x -= 1
+            self.move(-1, 0, check_collision=check_collision, collidables=collidables)
         
         if self.y < target_y:
-            self.y += 1
+            self.move(0, 1, check_collision=check_collision, collidables=collidables)
         elif self.y > target_y:
-            self.y -= 1
+            self.move(0, -1, check_collision=check_collision, collidables=collidables)
     
     def draw(self, scene):
         scene.set_char(self.x, self.y, self.char, layer=self.layer, color=self.color)
@@ -92,20 +97,25 @@ class Object(Sprite):
         self.pickable = pickable
         self.collidable = collidable
     
-    def move(self, dx, dy):
+    def move(self, dx, dy, check_collision=False, collidables=[]):
+        if check_collision:
+            for obj in collidables:
+                if obj != self and self.x + dx == obj.x and self.y + dy == obj.y:
+                    return False
         self.x += dx
         self.y += dy
+        return True
     
-    def move_towards(self, target_x, target_y):
+    def move_towards(self, target_x, target_y, check_collision=False, collidables=[]):
         if self.x < target_x:
-            self.x += 1
+            self.move(1, 0, check_collision=check_collision, collidables=collidables)
         elif self.x > target_x:
-            self.x -= 1
+            self.move(-1, 0, check_collision=check_collision, collidables=collidables)
         
         if self.y < target_y:
-            self.y += 1
+            self.move(0, 1, check_collision=check_collision, collidables=collidables)
         elif self.y > target_y:
-            self.y -= 1
+            self.move(0, -1, check_collision=check_collision, collidables=collidables)
     
     def draw(self, scene):
         scene.set_char(self.x, self.y, self.char, layer=self.layer, color=self.color)
@@ -139,6 +149,8 @@ class Scene:
         os.system("title " + title)
         self.bindings = bindings
         self.fps = fps
+
+        self.sprites = []
 
     def set_char(self, x, y, char, layer=2, color=37):
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -303,6 +315,65 @@ class Scene:
             actor.act()
             self.set_char(actor.x, actor.y, actor.char, layer=actor.layer, color=actor.color)
     
+    def add_sprite(self, sprite):
+        self.sprites.append(sprite)
+    
+    def add_sprites(self, sprites):
+        self.sprites.extend(sprites)
+    
+    def remove_sprite(self, sprite):
+        if sprite in self.sprites:
+            self.sprites.remove(sprite)
+    
+    def remove_sprites(self, sprites):
+        for sprite in sprites:
+            if sprite in self.sprites:
+                self.sprites.remove(sprite)
+    
+    def draw_sprite(self, sprite):
+        self.set_char(sprite.x, sprite.y, sprite.char, layer=sprite.layer, color=sprite.color)
+    
+    def draw_sprites(self, sprites=None):
+        if sprites is None:
+            sprites = self.sprites
+        for sprite in sprites:
+            self.set_char(sprite.x, sprite.y, sprite.char, layer=sprite.layer, color=sprite.color)
+    
+    def get_sprites_within(self, x, y, radius):
+        nearby_sprites = []
+        for sprite in self.sprites:
+            distance = ((sprite.x - x) ** 2 + (sprite.y - y) ** 2) ** 0.5
+            if distance <= radius:
+                nearby_sprites.append(sprite)
+        return nearby_sprites
+    
+    def get_sprite(self, id):
+        for sprite in self.sprites:
+            if sprite.id == id:
+                return sprite
+        return None
+
+    def get_surrounding_sprites(self, x, y):
+        surroundings = {}
+        directions = {
+            'up': (0, -1),
+            'down': (0, 1),
+            'left': (-1, 0),
+            'right': (1, 0),
+            'up_left': (-1, -1),
+            'up_right': (1, -1),
+            'down_left': (-1, 1),
+            'down_right': (1, 1)
+        }
+
+        for direction, (dx, dy) in directions.items():
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < self.width and 0 <= ny < self.height:
+                surroundings[direction] = [sprite for sprite in self.sprites if sprite.x == nx and sprite.y == ny]
+            else:
+                surroundings[direction] = []
+        return surroundings
+    
     def update_size(self, width=os.get_terminal_size()[0], height=os.get_terminal_size()[1],):
         if width != self.width or height != self.height:
             self.width = width
@@ -375,31 +446,6 @@ class Scene:
             else:
                 self.bindings[key]()
     
-    def prompt(self, x=0, y=0, prompt="Prompt", cursor="> ", show=True, layer=0, color=37):
-        if show: self.showcursor()
-        self.rich_text(x, y, prompt, layer, color)
-        self.rich_text(x, y + 1, cursor, layer, color)
-        self.display()
-
-        input_str = ""
-        while True:
-            key = self.handle_input()
-            if key is None:
-                continue
-            elif key == '\r':
-                break
-            elif key == '\x08':  # Backspace
-                input_str = input_str[:-1]
-                self.rich_text(x + len(cursor) + len(input_str), y + 1, ' ', layer)
-            else:
-                input_str += key
-                self.rich_text(x + len(cursor) + len(input_str) - 1, y + 1, key, layer)
-
-            self.display()
-
-        self.hidecursor()
-        return input_str
-
     def wait_for_key(self, valid_keys=None):
         while True:
             key = self.handle_input()
@@ -415,6 +461,7 @@ class Scene:
     def run(self, update_function):
         try:
             while True:
+                self.clear_all_layers()
                 update_function()
                 self.display()
                 time.sleep(1/self.fps)
